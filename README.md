@@ -6,12 +6,6 @@ This project implements a generative retrieval approach for predicting multi-des
 
 Multi-destination trips involve travelers visiting multiple cities in a single journey. This project aims to predict the next destination city for incomplete multi-destination trips using advanced machine learning techniques.
 
-### Key Features
-- Data analysis and exploration of multi-destination travel patterns
-- RQ-VAE based generative retrieval model
-- Evaluation using Accuracy@4 metric
-- Comprehensive data preprocessing pipeline
-
 ## Dataset
 
 The project uses the **Booking.com Multi-Destination Trips Dataset** from the WSDM WebTour 2021 Challenge.
