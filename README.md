@@ -43,6 +43,7 @@ The training dataset consists of over a million of anonymized hotel reservations
 - WSDM WebTour 2021 Challenge organizers
 
 ## Experiments
+record note: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spaceOverview
 ### 2026/4/7
 * Use word2vec to generate the sparse city_id embeddings
 * Use rq-vae to generate the discrete city_id representations by using word2vec embeddings
