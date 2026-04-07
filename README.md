@@ -36,23 +36,15 @@ The training dataset consists of over a million of anonymized hotel reservations
 - **Challenge**: Booking.com WSDM WebTour 2021 Challenge
 - **Conference**: [WSDM 2021](https://ceur-ws.org/Vol-2855/)
 
-### Citation
-If you use this dataset or code, please cite:
-```bibtex
-@inproceedings{ravagli2021booking,
-  title={Booking.com WSDM WebTour 2021 Challenge},
-  author={Ravagli, Niek and others},
-  booktitle={WSDM WebTour Workshop},
-  year={2021}
-}
-```
-
-
-## License
-
-This project is provided for academic and research purposes. Please refer to the original dataset license for data usage terms.
 
 ## Acknowledgments
 
 - Booking.com for providing the multi-destination trips dataset
 - WSDM WebTour 2021 Challenge organizers
+
+## Experiments
+### 2026/4/7
+* Use word2vec to generate the sparse city_id embeddings
+* Use rq-vae to generate the discrete city_id representations by using word2vec embeddings
+* Use GRU to predict the next city_id 
+* Score: 0.33884
