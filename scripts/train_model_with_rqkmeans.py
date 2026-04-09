@@ -15,7 +15,7 @@ from src.preprocessing import (
 )
 from src.rqvae_gru import RQVAEPredictor
 from src.rqvae_train_infer import predict_top4_cities, train_model
-from src.rqvae_transformer import RQVAETransformer
+from src.rqvae_transformer import RQKMeansTransformer
 
 def main():
     # root_dir = Path(__file__).resolve().parents[2]
@@ -43,7 +43,7 @@ def main():
 
     train_loader, test_loader = build_dataloaders(train_x, train_y, test_x, batch_size=256)
     
-    model = RQVAETransformer()
+    model = RQKMeansTransformer()
     model = train_model(model, train_loader, epochs=5, lr=0.001)
 
     code_to_cities = build_code_to_cities(city_to_codes, train_set)

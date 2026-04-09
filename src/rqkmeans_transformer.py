@@ -18,7 +18,7 @@ class PositionalEncoding(nn.Module):
         # 将位置编码加到 Embedding 上
         return x + self.pe[:, :x.size(1), :]
 
-class RQVAETransformer(nn.Module):
+class RQKMeansTransformer(nn.Module):
     def __init__(self, 
                  num_codes: int = 33, 
                  d_model: int = 256,  # Transformer 内部向量维度

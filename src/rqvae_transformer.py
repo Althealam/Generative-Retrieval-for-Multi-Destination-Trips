@@ -18,7 +18,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:, : x.size(1), :]
 
 
-class TrueRQVAETransformer(nn.Module):
+class RQVAETransformer(nn.Module):
     def __init__(
         self,
         codebook_size: int = 128,

@@ -55,4 +55,4 @@ record note: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spa
 * Drop the RQ-KMeans, use embedding table, and its score is 0.44354815884067816
 ### 2026/4/9
 * Find the reason why RQ-KMeans performance isn't great, and improve the word2vec training, but it doesn't have a better performance than normal embedding
-* Add RQ-VAE to encode the city_id 
+* Add RQ-VAE to encode the city_id, and test the accuracy@4, but it only have 0.249

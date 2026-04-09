@@ -86,7 +86,7 @@ def main():
     city_to_codes = export_city_to_codes(model, device, unique_cities, vectors)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    mapping_path = output_dir / f"city_to_codes_true_rqvae_{timestamp}.json"
+    mapping_path = output_dir / f"city_to_codes_rqvae_{timestamp}.json"
     with open(mapping_path, "w", encoding="utf-8") as f:
         json.dump(city_to_codes, f, ensure_ascii=False)
 

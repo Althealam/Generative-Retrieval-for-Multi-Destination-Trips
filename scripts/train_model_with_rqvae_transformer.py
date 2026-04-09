@@ -11,13 +11,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.dataset import build_dataloaders
 from src.preprocessing import build_code_to_cities, build_final_dataset, create_mutliple_sequences
-from src.rqvae_train_infer import predict_top4_cities_from_true_rqvae, train_true_rqvae_model
-from src.rqvae_transformer import TrueRQVAETransformer
+from src.rqvae_train_infer import predict_top4_cities_from_rqvae, train_rqvae_model
+from src.rqvae_transformer import RQVAETransformer
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mapping_path", type=str, default=None, help="Path to city_to_codes_true_rqvae json.")
+    parser.add_argument("--mapping_path", type=str, default=None, help="Path to city_to_codes_rqvae json.")
     parser.add_argument("--codebook_size", type=int, default=128)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch_size", type=int, default=256)
@@ -29,7 +29,7 @@ def auto_find_latest_mapping(output_dir: Path) -> Path:
     candidates = sorted(output_dir.glob("city_to_codes_rqvae_*.json"))
     if not candidates:
         raise FileNotFoundError(
-            "No city_to_codes_true_rqvae_*.json found. Run scripts.train_true_rqvae_codebook first."
+            "No city_to_codes_rqvae_*.json found. Run scripts.train_rqvae_codebook first."
         )
     return candidates[-1]
 
@@ -67,17 +67,17 @@ def main():
     print(f"✅ 数据集构建完成！训练样本: {len(train_x)} | 测试样本: {len(test_x)}")
 
     train_loader, test_loader = build_dataloaders(train_x, train_y, test_x, batch_size=args.batch_size)
-    model = TrueRQVAETransformer(
+    model = RQVAETransformer(
         codebook_size=args.codebook_size,
         d_model=256,
         nhead=4,
         num_layers=2,
         dim_feedforward=512,
     )
-    model = train_true_rqvae_model(model, train_loader, epochs=args.epochs, lr=args.lr)
+    model = train_rqvae_model(model, train_loader, epochs=args.epochs, lr=args.lr)
 
     code_to_cities = build_code_to_cities(city_to_codes, train_set)
-    predictions = predict_top4_cities_from_true_rqvae(
+    predictions = predict_top4_cities_from_rqvae(
         model=model,
         test_loader=test_loader,
         code_to_cities=code_to_cities,
@@ -93,7 +93,7 @@ def main():
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     submission_path = os.path.join(output_dir, f"submission_rqvae_transformer_{timestamp}.csv")
-    # submission_path = output_dir / f"submission_true_rqvae_transformer_{timestamp}.csv"
+    # submission_path = output_dir / f"submission_rqvae_transformer_{timestamp}.csv"
     submission_df.to_csv(submission_path, index=False)
     print(f"✅ {submission_path} 已生成！")
 

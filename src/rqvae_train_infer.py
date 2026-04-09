@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
-def train_true_rqvae_model(
+def train_rqvae_model(
     model: nn.Module,
     train_loader: DataLoader,
     epochs: int = 5,
@@ -35,7 +35,7 @@ def train_true_rqvae_model(
     return model
 
 
-def predict_top4_cities_from_true_rqvae(
+def predict_top4_cities_from_rqvae(
     model: nn.Module,
     test_loader: DataLoader,
     code_to_cities: dict[tuple[int, int], list[int]],
