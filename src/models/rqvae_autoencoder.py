@@ -1,13 +1,11 @@
 import torch
 import torch.nn as nn
 
-from src.rqvae_vector_quantizer import ResidualVectorQuantizer
+from src.models.rqvae_vector_quantizer import ResidualVectorQuantizer
 
 
 class RQVAE(nn.Module):
-    """
-    Minimal RQ-VAE for vector inputs (e.g., city Word2Vec vectors).
-    """
+    """Minimal RQ-VAE for vector inputs (e.g., city Word2Vec vectors)."""
 
     def __init__(
         self,
@@ -48,7 +46,6 @@ class RQVAE(nn.Module):
 
     @torch.no_grad()
     def encode_codes(self, x: torch.Tensor) -> torch.Tensor:
-        """Return stacked codes shape [batch, num_levels]."""
         self.eval()
         z_e = self.encoder(x)
         _, codes, _ = self.quantizer(z_e)

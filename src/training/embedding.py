@@ -1,4 +1,4 @@
-from collections import Counter
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
@@ -11,6 +11,8 @@ def train_city_transformer(
     pad_token_id: int = 0,
     epochs: int = 5,
     lr: float = 1e-3,
+    weight_decay: float = 1e-4,
+    label_smoothing: float = 0.05,
     device: torch.device | None = None,
 ) -> nn.Module:
     if device is None:
@@ -18,17 +20,29 @@ def train_city_transformer(
 
     model.to(device)
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss(ignore_index=pad_token_id)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    criterion = nn.CrossEntropyLoss(ignore_index=pad_token_id, label_smoothing=label_smoothing)
 
     for epoch in range(epochs):
         total_loss = 0.0
-        for batch_x, batch_y in train_loader:
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
+        for batch in train_loader:
+            if len(batch) == 6:
+                batch_x, batch_y, b_b, b_d, b_m, b_s = batch
+                batch_x = batch_x.to(device)
+                batch_y = batch_y.to(device)
+                b_b = b_b.to(device)
+                b_d = b_d.to(device)
+                b_m = b_m.to(device)
+                b_s = b_s.to(device)
+                optimizer.zero_grad()
+                logits = model(batch_x, b_b, b_d, b_m, b_s)
+            else:
+                batch_x, batch_y = batch
+                batch_x = batch_x.to(device)
+                batch_y = batch_y.to(device)
+                optimizer.zero_grad()
+                logits = model(batch_x)
 
-            optimizer.zero_grad()
-            logits = model(batch_x)
             loss = criterion(logits, batch_y)
             loss.backward()
             optimizer.step()
@@ -58,9 +72,26 @@ def recommend_top4_cities(
     outputs: list[list[int]] = []
 
     with torch.no_grad():
-        for batch_x in test_loader:
-            batch_x = batch_x.to(device)
-            logits = model(batch_x)
+        for batch in test_loader:
+            if torch.is_tensor(batch):
+                batch_x = batch.to(device)
+                logits = model(batch_x)
+            elif len(batch) == 5:
+                batch_x, b_b, b_d, b_m, b_s = batch
+                batch_x = batch_x.to(device)
+                b_b = b_b.to(device)
+                b_d = b_d.to(device)
+                b_m = b_m.to(device)
+                b_s = b_s.to(device)
+                logits = model(batch_x, b_b, b_d, b_m, b_s)
+            elif len(batch) == 1:
+                batch_x = batch[0].to(device)
+                logits = model(batch_x)
+            else:
+                raise ValueError(
+                    f"Unexpected test batch structure: {type(batch)}, len={getattr(batch, '__len__', 'n/a')}"
+                )
+
             probs = torch.softmax(logits, dim=1)
             _, top_indices = torch.topk(probs, k=min(topk_candidates, probs.size(1)), dim=1)
 
@@ -84,5 +115,7 @@ def recommend_top4_cities(
 
 
 def compute_top_popular_cities(train_city_series, k: int = 4) -> list[int]:
+    from collections import Counter
+
     counts = Counter(train_city_series.tolist())
     return [city_id for city_id, _ in counts.most_common(k)]

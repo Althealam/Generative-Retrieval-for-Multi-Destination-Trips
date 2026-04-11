@@ -1,5 +1,4 @@
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -9,10 +8,13 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
+from src.models import RQVAE
 from src.preprocessing import create_trip_sequences, train_word2vec
-from src.rqvae_autoencoder import RQVAE
+from src.utils import data_dir, rqvae_dir
 
 
 def build_city_vectors(train_set: pd.DataFrame, vector_size: int = 128, window: int = 10):
@@ -66,21 +68,16 @@ def export_city_to_codes(model: RQVAE, device: torch.device, unique_cities: list
     with torch.no_grad():
         x = torch.from_numpy(vectors).to(device)
         codes = model.encode_codes(x).cpu().numpy()
-    city_to_codes = {
+    return {
         int(city_id): [int(codes[i, 0]), int(codes[i, 1])] for i, city_id in enumerate(unique_cities)
     }
-    return city_to_codes
 
 
 def main():
-    root_dir = Path(__file__).resolve().parents[1]
-    data_dir = root_dir / "data"
-    output_dir = "/Users/althealam/Desktop/GitHub/Generative-Retrieval-for-Multi-Destination-Trips-via-RQ-VAE/output/rqvae"
-    # output_dir = root_dir / "output"
-    # output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = rqvae_dir()
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    train_set = pd.read_csv("/Users/althealam/Desktop/GitHub/Generative-Retrieval-for-Multi-Destination-Trips-via-RQ-VAE/data/train_set.csv")
-    # train_set = pd.read_csv(data_dir / "train_set.csv")
+    train_set = pd.read_csv(data_dir() / "train_set.csv")
     unique_cities, vectors = build_city_vectors(train_set, vector_size=128, window=10)
     model, device = train_rqvae(vectors, epochs=30, batch_size=512, lr=1e-3)
     city_to_codes = export_city_to_codes(model, device, unique_cities, vectors)
@@ -90,8 +87,7 @@ def main():
     with open(mapping_path, "w", encoding="utf-8") as f:
         json.dump(city_to_codes, f, ensure_ascii=False)
 
-    model_path = os.path.join(output_dir, f"rqvae_model_{timestamp}.pt")
-    # model_path = output_dir / f"rqvae_model_{timestamp}.pt"
+    model_path = output_dir / f"rqvae_model_{timestamp}.pt"
     torch.save(model.state_dict(), model_path)
 
     print(f"✅ saved mapping: {mapping_path}")
