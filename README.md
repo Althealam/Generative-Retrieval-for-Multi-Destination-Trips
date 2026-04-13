@@ -62,4 +62,4 @@ record note: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spa
 * Embedding model performance is 0.45, and rqvae with transformer performance is 0.3
 ### 2026/4/12
 * Use autodl to train the model with GPU, and turn on the multi step options. After adding multi-step, the embedding model performance improve to 0.4559.
-* Add multi-step options to RQVAE+Transformer and RQKmeans+Transformer
+* Add multi-step options to RQVAE+Transformer and RQKmeans+Transformer, with RQVAE 0.325861 and RQKmeans 0.282471, which can prove that multi-step really improve the performance.
