@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class RQVAEGRU(nn.Module):
@@ -52,8 +53,10 @@ class RQVAEGRU(nn.Module):
         last_stay_idx,
         same_country_streak_idx,
     ):
+        lengths = x.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
         embeds = self.embedding(x)
-        _, hn = self.gru(embeds)
+        packed = pack_padded_sequence(embeds, lengths, batch_first=True, enforce_sorted=False)
+        _, hn = self.gru(packed)
         last_hidden = hn[-1]
         ctx = torch.cat(
             [

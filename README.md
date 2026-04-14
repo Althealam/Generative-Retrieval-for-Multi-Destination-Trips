@@ -72,3 +72,12 @@ record note: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spa
 * Add GRU for rqkmeans and rqvae
 - RQKMeans: 0.329144
 - RQVAE: 0.343622
+### 2026/4/14
+* Fix the hidden state problem for both gru and transformer, and it turns out that it improve the performance especially in transformer architecture
+* Transformer
+- Embedding: 0.482098
+- RQKMeans: 0.306643
+- RQVAE: 0.333744
+* GRU
+- RQKMeans: 0.309035
+- RQVAE: 0.348745

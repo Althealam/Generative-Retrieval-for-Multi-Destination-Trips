@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class RQKmeansGRU(nn.Module):
@@ -15,7 +16,8 @@ class RQKmeansGRU(nn.Module):
         n_device_classes: int = 0,
     ):
         super().__init__()
-        self.embedding = nn.Embedding(num_codes, embedding_dim, padding_idx=32)
+        self.pad_token = 32
+        self.embedding = nn.Embedding(num_codes, embedding_dim, padding_idx=self.pad_token)
         self.gru = nn.GRU(embedding_dim, hidden_dim, batch_first=True)
 
         self.emb_booker = nn.Embedding(n_booker_countries + 1, 64, padding_idx=0)
@@ -46,8 +48,10 @@ class RQKmeansGRU(nn.Module):
         last_stay_idx,
         same_country_streak_idx,
     ):
+        lengths = x.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
         embeds = self.embedding(x)
-        _, hn = self.gru(embeds)
+        packed = pack_padded_sequence(embeds, lengths, batch_first=True, enforce_sorted=False)
+        _, hn = self.gru(packed)
         last_hidden = hn[-1]
         ctx = torch.cat(
             [

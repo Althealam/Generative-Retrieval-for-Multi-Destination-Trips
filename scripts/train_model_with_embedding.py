@@ -53,9 +53,11 @@ def main() -> None:
 
     print("正在聚合行程序列...")
     train_trips = create_multiple_sequences(train_set)
+    # print(train_trips)
     test_trips = create_multiple_sequences(test_set)
 
     city_to_idx, idx_to_city = build_city_vocab(train_set)
+    # print("city_to_idx:", city_to_idx)
     vocab_size = len(city_to_idx) + 2
 
     booker_to_idx, device_to_idx, n_booker, n_device = build_booker_device_vocabs(train_trips)

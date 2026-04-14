@@ -51,8 +51,10 @@ class CityTransformer(nn.Module):
         self.classifier = nn.Linear(d_model, vocab_size)
 
     def _generate_causal_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
-        mask = torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1)
-        return mask.masked_fill(mask == 1, float("-inf"))
+        return torch.triu(
+            torch.ones(seq_len, seq_len, device=device, dtype=torch.bool),
+            diagonal=1,
+        )
 
     def forward(
         self,
@@ -73,7 +75,10 @@ class CityTransformer(nn.Module):
         h = self.embedding(x) * math.sqrt(self.d_model)
         h = self.pos_encoder(h)
         h = self.transformer(h, mask=causal_mask, src_key_padding_mask=padding_mask)
-        last_hidden = h[:, -1, :]
+        # Pool from each sequence's last valid (non-pad) token.
+        valid_lengths = (~padding_mask).sum(dim=1).clamp(min=1)
+        last_indices = (valid_lengths - 1).unsqueeze(1).unsqueeze(2).expand(-1, 1, h.size(2))
+        last_hidden = h.gather(dim=1, index=last_indices).squeeze(1)
 
         ctx = torch.cat(
             [

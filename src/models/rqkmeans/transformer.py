@@ -51,9 +51,10 @@ class RQKMeansTransformer(nn.Module):
         self.fc_code2 = nn.Linear(d_model, codebook_size)
 
     def _generate_causal_mask(self, sz: int, device):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-        mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask == 1, float(0.0))
-        return mask.to(device)
+        return torch.triu(
+            torch.ones(sz, sz, device=device, dtype=torch.bool),
+            diagonal=1,
+        )
 
     def forward(
         self,
@@ -78,7 +79,9 @@ class RQKMeansTransformer(nn.Module):
         x = self.pos_encoder(x)
         output = self.transformer_block(x, mask=causal_mask, src_key_padding_mask=padding_mask)
 
-        last_hidden = output[:, -1, :]
+        valid_lengths = (~padding_mask).sum(dim=1).clamp(min=1)
+        last_indices = (valid_lengths - 1).unsqueeze(1).unsqueeze(2).expand(-1, 1, output.size(2))
+        last_hidden = output.gather(dim=1, index=last_indices).squeeze(1)
         ctx = torch.cat(
             [
                 self.emb_booker(booker_idx),

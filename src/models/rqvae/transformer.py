@@ -47,8 +47,10 @@ class RQVAETransformer(nn.Module):
         self.fc_code2 = nn.Linear(d_model, codebook_size)
 
     def _generate_causal_mask(self, seq_len: int, device: torch.device) -> torch.Tensor:
-        mask = torch.triu(torch.ones(seq_len, seq_len, device=device), diagonal=1)
-        return mask.masked_fill(mask == 1, float("-inf"))
+        return torch.triu(
+            torch.ones(seq_len, seq_len, device=device, dtype=torch.bool),
+            diagonal=1,
+        )
 
     def forward(
         self,
@@ -68,7 +70,9 @@ class RQVAETransformer(nn.Module):
         h = self.embedding(x) * math.sqrt(self.d_model)
         h = self.pos_encoder(h)
         h = self.transformer_block(h, mask=causal_mask, src_key_padding_mask=padding_mask)
-        last_hidden = h[:, -1, :]
+        valid_lengths = (~padding_mask).sum(dim=1).clamp(min=1)
+        last_indices = (valid_lengths - 1).unsqueeze(1).unsqueeze(2).expand(-1, 1, h.size(2))
+        last_hidden = h.gather(dim=1, index=last_indices).squeeze(1)
         ctx = torch.cat(
             [
                 self.emb_booker(booker_idx),
