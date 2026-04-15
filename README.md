@@ -66,24 +66,24 @@ record note: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spa
 ### 2026/4/13
 * Reconstruct the code, and add use_context for rqkmeans and rqvae
 * Feature Engineering like example github
-- Embedding: 0.458422
-- RQKMeans: 0.272268
-- RQVAE: 0.327814
+    - Embedding: 0.458422
+    - RQKMeans: 0.272268
+    - RQVAE: 0.327814
 * Add GRU for rqkmeans and rqvae
-- RQKMeans: 0.329144
-- RQVAE: 0.343622
+    - RQKMeans: 0.329144
+    - RQVAE: 0.343622
 ### 2026/4/14
 * Fix the hidden state problem for both gru and transformer, and it turns out that it improve the performance especially in transformer architecture
 * Add GRU for embedding model
 * Transformer
-- Embedding: 0.482098
-- RQKMeans: 0.306643
-- RQVAE: 0.333744
+    - Embedding: 0.482098
+    - RQKMeans: 0.306643
+    - RQVAE: 0.333744
 * GRU
-- RQKMeans: 0.309035
-- RQVAE: 0.348745
-- Embedding: 0.489117
+    - RQKMeans: 0.309035
+    - RQVAE: 0.348745
+    - Embedding: 0.489117
 * Add choice for hidden state which will be feed into the classification network: CLS/Last Hidden/Mean (this is only for transformer, and now I just implement on embedding model)
-- last: 0.485508
-- CLS: 0.076774
-- mean: 0.485508
+    - last: 0.485508
+    - CLS: 0.076774
+    - mean: 0.485508

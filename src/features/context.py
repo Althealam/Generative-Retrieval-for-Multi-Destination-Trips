@@ -36,7 +36,11 @@ def _compute_same_country_streak(countries: list[str]) -> int:
 
 
 def row_to_context_indices(
-    row: pd.Series, booker_to_idx: dict[str, int], device_to_idx: dict[str, int]
+    row: pd.Series,
+    booker_to_idx: dict[str, int],
+    device_to_idx: dict[str, int],
+    *,
+    prefix_len: int | None = None,
 ) -> tuple[int, int, int, int, int, int, int, int, int]:
     booker = booker_to_idx.get(str(row["booker_country"]), 0) if pd.notna(row["booker_country"]) else 0
     device = device_to_idx.get(str(row["device_class"]), 0) if pd.notna(row["device_class"]) else 0
@@ -48,32 +52,49 @@ def row_to_context_indices(
         mi = int(m)
         month_idx = mi if 1 <= mi <= 12 else 0
 
-    durs = row["stay_duration"]
-    if isinstance(durs, (list, np.ndarray)) and len(durs) > 0:
-        mean_stay = int(round(float(np.mean(durs))))
+    durs_raw = row["stay_duration"]
+    if isinstance(durs_raw, (list, np.ndarray)):
+        durs = list(durs_raw)
+    else:
+        durs = []
+
+    cities_raw = row["city_id"] if isinstance(row["city_id"], (list, np.ndarray)) else []
+    cities = list(cities_raw)
+
+    countries_raw = row["hotel_country"] if isinstance(row.get("hotel_country"), list) else []
+    countries = [str(c) for c in countries_raw if pd.notna(c)]
+
+    # Prevent future leakage: use only prefix information for this sample.
+    if prefix_len is None:
+        prefix_len = len(cities)
+    prefix_len = max(1, min(int(prefix_len), len(cities) if len(cities) > 0 else 1))
+
+    cities_prefix = cities[:prefix_len]
+    durs_prefix = durs[:prefix_len]
+    countries_prefix = countries[:prefix_len]
+
+    if len(durs_prefix) > 0:
+        mean_stay = int(round(float(np.mean(durs_prefix))))
     else:
         mean_stay = 1
     mean_stay = max(1, min(30, mean_stay))
     stay_idx = mean_stay
 
-    cities = row["city_id"] if isinstance(row["city_id"], (list, np.ndarray)) else []
-    trip_len = len(cities)
-    num_unique = len(set(cities)) if trip_len > 0 else 1
+    trip_len = len(cities_prefix)
+    num_unique = len(set(cities_prefix)) if trip_len > 0 else 1
     repeat_ratio = 1.0 - (num_unique / trip_len) if trip_len > 0 else 0.0
 
     trip_len_idx = _bucket_trip_len(trip_len if trip_len > 0 else 1)
     num_unique_idx = _bucket_trip_len(num_unique)
     repeat_ratio_idx = _bucket_repeat_ratio(repeat_ratio)
 
-    if isinstance(durs, (list, np.ndarray)) and len(durs) > 0:
-        last_stay = int(durs[-1])
+    if len(durs_prefix) > 0:
+        last_stay = int(durs_prefix[-1])
     else:
         last_stay = 1
     last_stay_idx = max(1, min(30, last_stay))
 
-    countries_raw = row["hotel_country"] if isinstance(row.get("hotel_country"), list) else []
-    countries = [str(c) for c in countries_raw if pd.notna(c)]
-    same_country_streak_idx = _compute_same_country_streak(countries)
+    same_country_streak_idx = _compute_same_country_streak(countries_prefix)
 
     return (
         booker,

@@ -69,12 +69,13 @@ def build_city_sequence_pack(
     for _, row in trip_df.iterrows():
         cities = row["city_id"]
         token_seq = [city_to_idx.get(city_id, UNK_TOKEN_ID) for city_id in cities]
-        b, d, m, s, tl, nu, rr, ls, sc = row_to_context_indices(
-            row, booker_to_idx, device_to_idx
-        )
 
         if is_test:
             x_values.append(token_seq[:-1])
+            prefix_len = max(1, len(token_seq) - 1)
+            b, d, m, s, tl, nu, rr, ls, sc = row_to_context_indices(
+                row, booker_to_idx, device_to_idx, prefix_len=prefix_len
+            )
             cb.append(b)
             cd.append(d)
             cm.append(m)
@@ -89,6 +90,9 @@ def build_city_sequence_pack(
                 for t in range(1, len(token_seq)):
                     x_values.append(token_seq[:t])
                     y_values.append(token_seq[t])
+                    b, d, m, s, tl, nu, rr, ls, sc = row_to_context_indices(
+                        row, booker_to_idx, device_to_idx, prefix_len=t
+                    )
                     cb.append(b)
                     cd.append(d)
                     cm.append(m)
@@ -102,6 +106,10 @@ def build_city_sequence_pack(
                 if len(token_seq) >= 2:
                     x_values.append(token_seq[:-1])
                     y_values.append(token_seq[-1])
+                    prefix_len = len(token_seq) - 1
+                    b, d, m, s, tl, nu, rr, ls, sc = row_to_context_indices(
+                        row, booker_to_idx, device_to_idx, prefix_len=prefix_len
+                    )
                     cb.append(b)
                     cd.append(d)
                     cm.append(m)
