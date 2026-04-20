@@ -38,69 +38,91 @@ The training dataset consists of over a million of anonymized hotel reservations
 - **Conference**: [WSDM 2021](https://ceur-ws.org/Vol-2855/)
 
 ## 🧪 Experiments
-Experiment notes: https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spaceOverview
-### 2026/4/7
-* Use word2vec to generate the sparse city_id embeddings
-* Use rq-vae to generate the discrete city_id representations by using word2vec embeddings
-* Use GRU to predict the next city_id 
-* Score: 0.33884
-### 2026/4/8
-* Use transformer+rq-kmeans+word2vec to predict the next city_id, and its score is 0.33429
-* Increase the embedding_dim from 128 to 256, but the score is decreasing
-* Drop the RQ-KMeans, use embedding table, and its score is 0.44354815884067816
-### 2026/4/9
-* Find the reason why RQ-KMeans performance isn't great, and improve the word2vec training, but it doesn't have a better performance than normal embedding
-* Add RQ-VAE to encode the city_id, and test the accuracy@4, but it only have 0.249
-### 2026/4/11
-* Update feature engineering
-* Add a multi-step training, which means that we can train A-B-C with A-B and A-B-C, so it will have more training data
-* Embedding model performance is 0.45, and rqvae with transformer performance is 0.3
-### 2026/4/12
-* Use autodl to train the model with GPU, and turn on the multi step options. After adding multi-step, the embedding model performance improve to 0.4559.
-* Add multi-step options to RQVAE+Transformer and RQKmeans+Transformer, with RQVAE 0.325861 and RQKmeans 0.282471, which can prove that multi-step really improve the performance.
-### 2026/4/13
-* Reconstruct the code, and add use_context for rqkmeans and rqvae
-* Feature Engineering like example github
-    - Embedding: 0.458422
-    - RQKMeans: 0.272268
-    - RQVAE: 0.327814
-* Add GRU for rqkmeans and rqvae
-    - RQKMeans: 0.329144
-    - RQVAE: 0.343622
-### 2026/4/14
-* Fix the hidden state problem for both gru and transformer, and it turns out that it improve the performance especially in transformer architecture
-* Add GRU for embedding model
-* Transformer
-    - Embedding: 0.482098
-    - RQKMeans: 0.306643
-    - RQVAE: 0.333744
-* GRU
-    - RQKMeans: 0.309035
-    - RQVAE: 0.348745
-    - Embedding: 0.489117
-* Add choice for hidden state which will be feed into the classification network: CLS/Last Hidden/Mean (this is only for transformer, and now I just implement on embedding model)
-    - last: 0.485508
-    - CLS: 0.076774
-    - mean: 0.485508
-### 2026/4/15
-* Add geograpy features into the embedding, rqvae, rqkmeans model. The features are: last_hotel_country, unique_hotel_countries, cross_border_count, cross_border_ratio. And the performance are like:
-    - Embedding with transformer: 0.487093
-    - RQVAE with transformer: 0.338428
-    - RQKMeans with transformer: 0.290920
-### 2026/4/16
-* Drop causal mask for embedding model
-    - Embedding with transformer: 0.485296 
-* Add affiliate_id
-    - Embedding with transformer: 0.483202
-    - RQVAE: 0.341598
-    - RQKMeans: 0.304379
-* Change the type of device_class: before that we use "first", which means that we just get the first trip device type, but now we use the list of device_class
-### 2026/4/20
-* Add semantic ID as side info into the embedding model
-    - Embedding with rqvae: 0.484334
-    - Embedding with rqkmeans: 0.484093
-* Feature confusion: add gate mechanism to combine context features and sequence last hidden states feature
-    - Embedding: 0.480598
+Experiment notes: [Feishu Wiki](https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17AEnBc?fromScene=spaceOverview)
+
+### 🗓️ Timeline
+
+#### 2026-04-07
+- Trained Word2Vec city embeddings and RQ-VAE discrete city representations.
+- Used GRU for next-city prediction.
+- Score: `0.33884`.
+
+#### 2026-04-08
+- Tested Transformer + RQ-KMeans + Word2Vec.
+- Result: `0.33429`.
+- Increased embedding dimension from `128` to `256` (performance decreased).
+- Dropped RQ-KMeans and switched to direct embedding table.
+- Result after switch: `0.443548`.
+
+#### 2026-04-09
+- Investigated weak RQ-KMeans performance and improved Word2Vec training.
+- RQ-KMeans still underperformed compared with direct embedding baseline.
+- Added RQ-VAE encoding for city IDs.
+- RQ-VAE Accuracy@4: `0.249`.
+
+#### 2026-04-11
+- Updated feature engineering.
+- Introduced multi-step training (prefix-to-next-city expansion).
+- Results:
+  - Embedding: `0.45`
+  - RQVAE + Transformer: `0.3`
+
+#### 2026-04-12
+- Enabled GPU training on AutoDL and turned on multi-step.
+- Embedding improved to `0.4559`.
+- Added multi-step to RQVAE+Transformer and RQKMeans+Transformer:
+  - RQVAE: `0.325861`
+  - RQKMeans: `0.282471`
+
+#### 2026-04-13
+- Refactored code and added context usage for RQKMeans / RQVAE.
+- Feature engineering update:
+  - Embedding: `0.458422`
+  - RQKMeans: `0.272268`
+  - RQVAE: `0.327814`
+- Added GRU for RQKMeans / RQVAE:
+  - RQKMeans: `0.329144`
+  - RQVAE: `0.343622`
+
+#### 2026-04-14
+- Fixed hidden-state extraction for GRU and Transformer (notable gains, especially Transformer).
+- Added GRU for embedding model.
+- Results by architecture:
+  - Transformer:
+    - Embedding: `0.482098`
+    - RQKMeans: `0.306643`
+    - RQVAE: `0.333744`
+  - GRU:
+    - RQKMeans: `0.309035`
+    - RQVAE: `0.348745`
+    - Embedding: `0.489117`
+- Added Transformer pooling options for embedding model:
+  - `last`: `0.485508`
+  - `cls`: `0.076774`
+  - `mean`: `0.485508`
+
+#### 2026-04-15
+- Added geography features (`last_hotel_country`, `unique_hotel_countries`, `cross_border_count`, `cross_border_ratio`).
+- Results:
+  - Embedding + Transformer: `0.487093`
+  - RQVAE + Transformer: `0.338428`
+  - RQKMeans + Transformer: `0.290920`
+
+#### 2026-04-16
+- Dropped causal mask in embedding Transformer:
+  - Embedding + Transformer: `0.485296`
+- Added `affiliate_id`:
+  - Embedding + Transformer: `0.483202`
+  - RQVAE: `0.341598`
+  - RQKMeans: `0.304379`
+- Updated `device_class` handling from a single first value to full sequence list.
+
+#### 2026-04-20
+- Added semantic IDs as side information in embedding model:
+  - Embedding + RQVAE semantic IDs: `0.484334`
+  - Embedding + RQKMeans semantic IDs: `0.484093`
+- Added gate fusion for context + sequence hidden state:
+  - Embedding: `0.480598`
 
 ### ✨ Useful Tricks (from experiments)
 - **Multi-step training is consistently helpful**: turning on `--multi_step` improves all three pipelines (Embedding / RQVAE / RQKMeans), especially when training data is sparse at longer sequence lengths.
