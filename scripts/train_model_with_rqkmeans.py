@@ -51,14 +51,14 @@ def main() -> None:
     train_set = pd.read_csv(data_dir() / "train_set.csv")
     test_set = pd.read_csv(data_dir() / "test_set.csv")
 
-    print("正在聚合行程序列...")
+    print("Aggregating trip sequences...")
     train_trips = create_multiple_sequences(train_set)
     test_trips = create_multiple_sequences(test_set)
 
-    print("正在训练 Word2Vec...")
+    print("Training Word2Vec...")
     w2v = train_word2vec(train_trips, vector_size=64, window=5)
 
-    print("正在构建 RQ 语义索引 (Residual Quantization)...")
+    print("Building RQ semantic index (Residual Quantization)...")
     city_to_codes = build_rq_codebook(train_set, w2v, n_clusters=N_CLUSTERS, random_state=42)
     
     booker_to_idx, device_to_idx, affiliate_to_idx, n_booker, n_device, n_affiliate = (
@@ -89,8 +89,11 @@ def main() -> None:
     )
     test_x, _, *test_ctx = test_parts
 
-    print("✅ 数据集构建完成！")
-    print(f"训练集样本: {len(train_x)} | 测试集样本: {len(test_x)} | multi_step={args.multi_step} | model_type={args.model}")
+    print("✅ Dataset build complete!")
+    print(
+        f"Train samples: {len(train_x)} | Test samples: {len(test_x)} | "
+        f"multi_step={args.multi_step} | model_type={args.model}"
+    )
 
     train_loader, test_loader = build_dataloaders(
         train_x,
@@ -141,7 +144,7 @@ def main() -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     submission_path = out_dir / f"submission_rqkmeans_{model_type}_{timestamp}.csv"
     submission_df.to_csv(submission_path, index=False)
-    print(f"✅ {submission_path} 已生成！")
+    print(f"✅ Generated submission: {submission_path}")
     print_accuracy_at_4_report(
         submission_df,
         skip=args.skip_eval,

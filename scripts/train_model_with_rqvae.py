@@ -74,7 +74,7 @@ def main() -> None:
     train_set = pd.read_csv(data_dir() / "train_set.csv")
     test_set = pd.read_csv(data_dir() / "test_set.csv")
 
-    print("正在聚合行程序列...")
+    print("Aggregating trip sequences...")
     train_trips = create_multiple_sequences(train_set)
     test_trips = create_multiple_sequences(test_set)
 
@@ -107,7 +107,7 @@ def main() -> None:
     test_x, _, *test_ctx = test_parts
 
     print(
-        f"✅ 数据集构建完成！训练样本: {len(train_x)} | 测试样本: {len(test_x)} | multi_step={args.multi_step} | model_type={args.model}"
+        f"✅ Dataset build complete! Train samples: {len(train_x)} | Test samples: {len(test_x)} | multi_step={args.multi_step} | model_type={args.model}"
     )
 
     train_loader, test_loader = build_dataloaders(
@@ -167,7 +167,7 @@ def main() -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     submission_path = sub_dir / f"submission_rqvae_{model_type}_{timestamp}.csv"
     submission_df.to_csv(submission_path, index=False)
-    print(f"✅ {submission_path} 已生成！")
+    print(f"✅ Generated submission: {submission_path}")
     print_accuracy_at_4_report(
         submission_df,
         skip=args.skip_eval,

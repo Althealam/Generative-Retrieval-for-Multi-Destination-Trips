@@ -21,8 +21,11 @@ def create_trip_sequences(df: pd.DataFrame) -> pd.DataFrame:
 
 def create_multiple_sequences(df: pd.DataFrame) -> pd.DataFrame:
     """
-    聚合后每行主要有：city_id(list), stay_duration(list), checkin_month(list), booker_country(list), device_class(list)
-    将原始数据变成trip级的数据
+    Aggregate row-level bookings into trip-level rows.
+
+    Each row mainly contains:
+    city_id(list), stay_duration(list), checkin_month(list),
+    booker_country(list), and device_class(list).
     """
     data = df.copy()
     data["checkin"] = pd.to_datetime(data["checkin"])

@@ -48,7 +48,7 @@ def print_accuracy_at_4_report(
     try:
         gt = load_ground_truth(ground_truth_path)
     except FileNotFoundError as e:
-        print(f"⚠️ 跳过评估（未找到 ground truth）: {e}")
+        print(f"⚠️ Skip evaluation (ground truth not found): {e}")
         return
     acc, n = evaluate_accuracy_at_4(submission_df, gt)
     print(f"📊 Accuracy@4: {acc:.6f}  (trips evaluated: {n})")

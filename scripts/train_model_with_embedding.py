@@ -103,7 +103,7 @@ def _build_semantic_mapping(
     if args.semantic_source == "none":
         return None
     if args.semantic_source == "rqkmeans":
-        print("正在构建 RQ-KMeans semantic id 映射...")
+        print("Building RQ-KMeans semantic id mapping...")
         w2v = train_word2vec(train_trips, vector_size=64, window=5)
         return build_rq_codebook(
             train_set,
@@ -113,7 +113,7 @@ def _build_semantic_mapping(
         )
     if not args.semantic_mapping_path:
         raise ValueError("--semantic_mapping_path is required when --semantic_source rqvae")
-    print("正在加载 RQVAE semantic id 映射...")
+    print("Loading RQVAE semantic id mapping...")
     return _load_rqvae_mapping(args.semantic_mapping_path)
 
 
@@ -189,7 +189,7 @@ def main() -> None:
     train_set = pd.read_csv(data_dir() / "train_set.csv")
     test_set = pd.read_csv(data_dir() / "test_set.csv")
 
-    print("正在聚合行程序列...")
+    print("Aggregating trip sequences...")
     train_trips = create_multiple_sequences(train_set)
     # print(train_trips)
     test_trips = create_multiple_sequences(test_set)
@@ -229,7 +229,7 @@ def main() -> None:
     )
 
     print(
-        f"✅ City 数据集完成！训练样本: {len(train_pack.x)} | 测试样本: {len(test_pack.x)} "
+        f"✅ City dataset ready! Train samples: {len(train_pack.x)} | Test samples: {len(test_pack.x)} "
         f"| multi_step={args.multi_step}"
         f"| model={args.model}"
         f"| pooling={args.pooling}"
@@ -283,7 +283,7 @@ def main() -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     submission_path = out_dir / f"submission_embedding_{timestamp}.csv"
     submission_df.to_csv(submission_path, index=False)
-    print(f"✅ {submission_path} 已生成！")
+    print(f"✅ Generated submission: {submission_path}")
     print_accuracy_at_4_report(
         submission_df,
         skip=args.skip_eval,

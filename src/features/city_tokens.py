@@ -45,11 +45,12 @@ class CitySequencePack:
 
 def build_city_vocab(train_set: pd.DataFrame) -> tuple[dict[int, int], dict[int, int]]:
     """
-    建立城市词表
-    city_to_idx: city_id->token id
-    idx_to_city: 反向映射，用于预测后还原城市
-    特殊token为PAD_TOKEN_ID=0, UNK_TOKEN_ID=1
-    vocab_size = len(city_to_idx)+2
+    Build city vocabulary.
+
+    city_to_idx: city_id -> token id
+    idx_to_city: reverse map for converting predictions back to city ids
+    Special tokens: PAD_TOKEN_ID=0, UNK_TOKEN_ID=1
+    vocab_size = len(city_to_idx) + 2
     """
     unique_cities = sorted(train_set["city_id"].unique().tolist())
     city_to_idx = {city_id: idx + 2 for idx, city_id in enumerate(unique_cities)}
@@ -70,10 +71,12 @@ def build_city_sequence_pack(
     city_to_semantic_codes: dict[int, tuple[int, int]] | None = None,
 ) -> CitySequencePack:
     """
-    将每个trip变成模型输入
-    x: 历史城市前缀token序列
-    y: 下一个城市token（训练时）
-    如果开启multi_step，每个trip产生多条训练样本；否则每个trip只会产生一个1样本
+    Convert each trip row into model inputs.
+
+    x: historical city prefix token sequence
+    y: next city token (training only)
+    If multi_step is enabled, each trip produces multiple training samples;
+    otherwise each trip produces one sample.
     """
     x_values: list[list[int]] = []
     y_values: list[int] | None = [] if not is_test else None
