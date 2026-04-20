@@ -136,15 +136,15 @@ Experiment notes: [Feishu Wiki](https://my.feishu.cn/wiki/ICjgw24P8iIb9rkrIVJc17
 
 ### Embedding Model Architecture (Image)
 
-![Embedding Architecture](assets/embedding-architecture.svg)
+![Embedding Architecture](assets/embedding-architecture.png)
 
 ### RQVAE Pipeline Architecture (Image)
 
-![RQVAE Architecture](assets/rqvae-architecture.svg)
+![RQVAE Architecture](assets/rqvae-architecture.png)
 
 ### RQKMeans Pipeline Architecture (Image)
 
-![RQKMeans Architecture](assets/rqkmeans-architecture.svg)
+![RQKMeans Architecture](assets/rqkmeans-architecture.png)
 
 | Pipeline | Input Representation | Prediction Target | Decoder Strategy | Transformer Best Accuracy@4 | GRU Best Accuracy@4 |
 |---|---|---|---|---:|---:|
