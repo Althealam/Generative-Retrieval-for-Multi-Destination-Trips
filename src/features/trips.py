@@ -28,6 +28,11 @@ def create_multiple_sequences(df: pd.DataFrame) -> pd.DataFrame:
     booker_country(list), and device_class(list).
     """
     data = df.copy()
+
+    # Handle empty DataFrame
+    if len(data) == 0:
+        return pd.DataFrame()
+
     data["checkin"] = pd.to_datetime(data["checkin"])
     data["checkout"] = pd.to_datetime(data["checkout"])
     data = data.sort_values(["utrip_id", "checkin"])

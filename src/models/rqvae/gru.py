@@ -65,8 +65,13 @@ class RQVAEGRU(nn.Module):
         cross_border_count_idx,
         cross_border_ratio_idx,
     ):
-        lengths = x.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
-        embeds = self.embedding(x)
+        # x shape: (batch, seq_len, 2) for code pairs
+        batch_size, seq_len, num_levels = x.size()
+        # Flatten codes: (batch, seq_len, 2) -> (batch, seq_len*2)
+        x_flat = x.reshape(batch_size, seq_len * num_levels)
+
+        lengths = x_flat.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
+        embeds = self.embedding(x_flat)
         packed = pack_padded_sequence(embeds, lengths, batch_first=True, enforce_sorted=False)
         _, hn = self.gru(packed)
         last_hidden = hn[-1]
@@ -90,4 +95,7 @@ class RQVAEGRU(nn.Module):
             dim=-1,
         )
         last_hidden = last_hidden + self.ctx_proj(ctx)
-        return self.fc_code1(last_hidden), self.fc_code2(last_hidden)
+        # Return shape: (batch_size, 2, codebook_size)
+        code1_logits = self.fc_code1(last_hidden)
+        code2_logits = self.fc_code2(last_hidden)
+        return torch.stack([code1_logits, code2_logits], dim=1)

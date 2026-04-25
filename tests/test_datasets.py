@@ -22,9 +22,9 @@ class TestDataLoaders:
         train_y = [10, 11, 12]
         test_x = [[13, 14], [15, 16, 17]]
 
-        # Create dummy context (9 features)
-        train_ctx = tuple([list(range(len(train_x)))] * 9)
-        test_ctx = tuple([list(range(len(test_x)))] * 9)
+        # Create dummy context (16 features)
+        train_ctx = tuple([list(range(len(train_x)))] * 16)
+        test_ctx = tuple([list(range(len(test_x)))] * 16)
 
         train_loader, test_loader = build_city_dataloaders(
             train_x=train_x,
@@ -51,14 +51,14 @@ class TestDataLoaders:
         # y should be tensor
         assert isinstance(y_batch, torch.Tensor)
 
-        # Should have 9 context features
-        assert len(context_batch) == 9
+        # Should have 16 context features
+        assert len(context_batch) == 16
 
     def test_padding_in_dataloader(self):
         """Test that sequences are properly padded."""
         train_x = [[1, 2], [3, 4, 5, 6, 7]]  # Different lengths
         train_y = [10, 11]
-        train_ctx = tuple([[0, 1]] * 9)
+        train_ctx = tuple([[0, 1]] * 16)
 
         train_loader, _ = build_city_dataloaders(
             train_x=train_x,
@@ -66,7 +66,7 @@ class TestDataLoaders:
             test_x=[[1]],
             batch_size=2,
             train_ctx=train_ctx,
-            test_ctx=tuple([[0]] * 9),
+            test_ctx=tuple([[0]] * 16),
         )
 
         batch = next(iter(train_loader))

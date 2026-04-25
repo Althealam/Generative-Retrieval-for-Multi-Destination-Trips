@@ -9,14 +9,14 @@ from src.models.embedding.positional import PositionalEncoding
 class RQKMeansTransformer(nn.Module):
     def __init__(
         self,
-        num_codes: int = 33,
+        num_codes: int | None = None,
         d_model: int = 256,
         nhead: int = 4,
         num_layers: int = 2,
         dim_feedforward: int = 256,
         max_len: int = 100,
         codebook_size: int = 32,
-        pad_code: int = 32,
+        pad_code: int | None = None,
         n_booker_countries: int = 0,
         n_device_classes: int = 0,
         n_affiliates: int = 0,
@@ -24,10 +24,13 @@ class RQKMeansTransformer(nn.Module):
     ):
         super().__init__()
         self.d_model = d_model
-        self.pad_code = pad_code
         self.codebook_size = codebook_size
+        # Set pad_code to codebook_size if not specified
+        self.pad_code = pad_code if pad_code is not None else codebook_size
+        # Set num_codes to codebook_size + 1 (including padding) if not specified
+        num_codes = num_codes if num_codes is not None else codebook_size + 1
 
-        self.embedding = nn.Embedding(num_codes, d_model, padding_idx=pad_code)
+        self.embedding = nn.Embedding(num_codes, d_model, padding_idx=self.pad_code)
         self.pos_encoder = PositionalEncoding(d_model, max_len=max_len)
 
         decoder_layer = nn.TransformerEncoderLayer(
@@ -81,15 +84,19 @@ class RQKMeansTransformer(nn.Module):
         cross_border_count_idx,
         cross_border_ratio_idx,
     ):
-        _, seq_len = x.size()
+        # x shape: (batch, seq_len, 2) for code pairs
+        batch_size, seq_len, num_levels = x.size()
         device = x.device
 
-        padding_mask = x == self.pad_code
-        causal_mask = self._generate_causal_mask(seq_len, device)
+        # Flatten codes: (batch, seq_len, 2) -> (batch, seq_len*2)
+        x_flat = x.reshape(batch_size, seq_len * num_levels)
 
-        x = self.embedding(x) * math.sqrt(self.d_model)
-        x = self.pos_encoder(x)
-        output = self.transformer_block(x, mask=causal_mask, src_key_padding_mask=padding_mask)
+        padding_mask = x_flat == self.pad_code
+        causal_mask = self._generate_causal_mask(seq_len * num_levels, device)
+
+        x_emb = self.embedding(x_flat) * math.sqrt(self.d_model)
+        x_emb = self.pos_encoder(x_emb)
+        output = self.transformer_block(x_emb, mask=causal_mask, src_key_padding_mask=padding_mask)
 
         valid_lengths = (~padding_mask).sum(dim=1).clamp(min=1)
         last_indices = (valid_lengths - 1).unsqueeze(1).unsqueeze(2).expand(-1, 1, output.size(2))
@@ -114,4 +121,7 @@ class RQKMeansTransformer(nn.Module):
             dim=-1,
         )
         last_hidden = last_hidden + self.ctx_proj(ctx)
-        return self.fc_code1(last_hidden), self.fc_code2(last_hidden)
+        # Return shape: (batch_size, 2, codebook_size)
+        code1_logits = self.fc_code1(last_hidden)
+        code2_logits = self.fc_code2(last_hidden)
+        return torch.stack([code1_logits, code2_logits], dim=1)

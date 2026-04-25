@@ -77,9 +77,14 @@ class RQVAETransformer(nn.Module):
         cross_border_count_idx: torch.Tensor,
         cross_border_ratio_idx: torch.Tensor,
     ):
-        padding_mask = x.eq(self.pad_token)
-        causal_mask = self._generate_causal_mask(x.size(1), x.device)
-        h = self.embedding(x) * math.sqrt(self.d_model)
+        # x shape: (batch, seq_len, 2) for code pairs
+        batch_size, seq_len, num_levels = x.size()
+        # Flatten codes: (batch, seq_len, 2) -> (batch, seq_len*2)
+        x_flat = x.reshape(batch_size, seq_len * num_levels)
+
+        padding_mask = x_flat.eq(self.pad_token)
+        causal_mask = self._generate_causal_mask(seq_len * num_levels, x.device)
+        h = self.embedding(x_flat) * math.sqrt(self.d_model)
         h = self.pos_encoder(h)
         h = self.transformer_block(h, mask=causal_mask, src_key_padding_mask=padding_mask)
         valid_lengths = (~padding_mask).sum(dim=1).clamp(min=1)
@@ -105,4 +110,7 @@ class RQVAETransformer(nn.Module):
             dim=-1,
         )
         last_hidden = last_hidden + self.ctx_proj(ctx)
-        return self.fc_code1(last_hidden), self.fc_code2(last_hidden)
+        # Return shape: (batch_size, 2, codebook_size)
+        code1_logits = self.fc_code1(last_hidden)
+        code2_logits = self.fc_code2(last_hidden)
+        return torch.stack([code1_logits, code2_logits], dim=1)

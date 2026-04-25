@@ -24,7 +24,8 @@ class TestContextFeatures:
         # Create sample data
         data = pd.DataFrame({
             'booker_country': ['US', 'UK', 'US', 'FR'],
-            'device_class': ['mobile', 'desktop', 'mobile', 'desktop']
+            'device_class': ['mobile', 'desktop', 'mobile', 'desktop'],
+            'affiliate_id': ['direct', 'search', 'direct', 'partner']
         })
 
         booker_to_idx, device_to_idx, n_booker, n_device = build_booker_device_vocabs(data)
@@ -48,11 +49,13 @@ class TestContextFeatures:
         """Test extraction of context indices from a trip row."""
         booker_to_idx = {'US': 1, 'UK': 2}
         device_to_idx = {'mobile': 1, 'desktop': 2}
+        affiliate_to_idx = {'direct': 1, 'search': 2}
 
         row = pd.Series({
-            'booker_country': 'US',
-            'device_class': 'mobile',
-            'checkin_month': 3,
+            'booker_country': ['US', 'US', 'US'],
+            'device_class': ['mobile', 'mobile', 'mobile'],
+            'affiliate_id': ['direct', 'direct', 'direct'],
+            'checkin_month': [3, 3, 3],
             'stay_duration': [2, 3, 4],
             'city_id': [100, 101, 102],
             'hotel_country': ['US', 'US', 'FR']
@@ -62,19 +65,21 @@ class TestContextFeatures:
             row,
             booker_to_idx,
             device_to_idx,
+            affiliate_to_idx,
             prefix_len=3
         )
 
-        # Should return 9 indices
-        assert len(indices) == 9
+        # Should return 10 indices (booker, device, affiliate, month, stay, trip_len, num_unique, repeat_ratio, last_stay, same_country_streak)
+        assert len(indices) == 10
 
-        # Booker and device should match
-        booker_idx, device_idx = indices[0], indices[1]
+        # Booker, device, and affiliate should match
+        booker_idx, device_idx, affiliate_idx = indices[0], indices[1], indices[2]
         assert booker_idx == 1  # US
         assert device_idx == 1  # mobile
+        assert affiliate_idx == 1  # direct
 
         # Month should be 3
-        assert indices[2] == 3
+        assert indices[3] == 3
 
         # All indices should be positive integers
         assert all(isinstance(idx, (int, np.integer)) for idx in indices)
@@ -84,11 +89,13 @@ class TestContextFeatures:
         """Test that prefix_len prevents data leakage."""
         booker_to_idx = {'US': 1}
         device_to_idx = {'mobile': 1}
+        affiliate_to_idx = {'direct': 1}
 
         row = pd.Series({
-            'booker_country': 'US',
-            'device_class': 'mobile',
-            'checkin_month': 3,
+            'booker_country': ['US', 'US', 'US', 'US', 'US'],
+            'device_class': ['mobile', 'mobile', 'mobile', 'mobile', 'mobile'],
+            'affiliate_id': ['direct', 'direct', 'direct', 'direct', 'direct'],
+            'checkin_month': [3, 3, 3, 3, 3],
             'stay_duration': [1, 2, 3, 4, 5],
             'city_id': [100, 101, 102, 103, 104],
             'hotel_country': ['US', 'US', 'FR', 'FR', 'UK']
@@ -99,6 +106,7 @@ class TestContextFeatures:
             row,
             booker_to_idx,
             device_to_idx,
+            affiliate_to_idx,
             prefix_len=2
         )
 
@@ -107,17 +115,18 @@ class TestContextFeatures:
             row,
             booker_to_idx,
             device_to_idx,
+            affiliate_to_idx,
             prefix_len=5
         )
 
-        # Trip length should be different
-        trip_len_idx_prefix2 = indices_prefix2[4]
-        trip_len_idx_full = indices_full[4]
+        # Trip length should be different (index 5 now, after booker/device/affiliate/month/stay)
+        trip_len_idx_prefix2 = indices_prefix2[5]
+        trip_len_idx_full = indices_full[5]
         assert trip_len_idx_prefix2 != trip_len_idx_full
 
-        # Unique cities count should be different
-        num_unique_prefix2 = indices_prefix2[5]
-        num_unique_full = indices_full[5]
+        # Unique cities count should be different (index 6 now)
+        num_unique_prefix2 = indices_prefix2[6]
+        num_unique_full = indices_full[6]
         # Both should be valid
         assert num_unique_prefix2 > 0
         assert num_unique_full > 0
@@ -136,6 +145,7 @@ class TestTripCreation:
             'checkout': pd.date_range('2024-01-02', periods=5),
             'booker_country': ['US', 'US', 'US', 'UK', 'UK'],
             'device_class': ['mobile', 'mobile', 'mobile', 'desktop', 'desktop'],
+            'affiliate_id': ['direct', 'direct', 'direct', 'search', 'search'],
             'hotel_country': ['US', 'FR', 'IT', 'UK', 'FR']
         })
 

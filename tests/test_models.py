@@ -13,6 +13,48 @@ from src.models.rqvae import RQVAE, RQVAETransformer, RQVAEGRU
 from src.models.rqkmeans import RQKMeansTransformer, RQKmeansGRU
 
 
+def generate_valid_embedding_context(batch_size):
+    """Generate valid context values for embedding models (16 features)."""
+    return [
+        torch.randint(0, 5, (batch_size,)),     # booker: 0-4
+        torch.randint(0, 2, (batch_size,)),     # device: 0-1
+        torch.randint(0, 3, (batch_size,)),     # affiliate: 0-2
+        torch.randint(1, 12, (batch_size,)),    # month: 1-11
+        torch.randint(1, 30, (batch_size,)),    # stay: 1-29
+        torch.randint(1, 30, (batch_size,)),    # trip_len: 1-29
+        torch.randint(1, 30, (batch_size,)),    # num_unique: 1-29
+        torch.randint(1, 10, (batch_size,)),    # repeat_ratio: 1-9
+        torch.randint(1, 30, (batch_size,)),    # last_stay: 1-29
+        torch.randint(1, 30, (batch_size,)),    # same_country: 1-29
+        torch.randint(0, 5, (batch_size,)),     # last_hotel_country: 0-4
+        torch.randint(1, 30, (batch_size,)),    # unique_hotel_countries: 1-29
+        torch.randint(1, 30, (batch_size,)),    # cross_border_count: 1-29
+        torch.randint(1, 10, (batch_size,)),    # cross_border_ratio: 1-9
+        torch.randint(0, 10, (batch_size,)),    # sem_code1: 0-9
+        torch.randint(0, 10, (batch_size,)),    # sem_code2: 0-9
+    ]
+
+
+def generate_valid_rq_context(batch_size):
+    """Generate valid context values for RQ models (14 features, no semantic codes)."""
+    return [
+        torch.randint(0, 5, (batch_size,)),     # booker: 0-4
+        torch.randint(0, 2, (batch_size,)),     # device: 0-1
+        torch.randint(0, 3, (batch_size,)),     # affiliate: 0-2
+        torch.randint(1, 12, (batch_size,)),    # month: 1-11
+        torch.randint(1, 30, (batch_size,)),    # stay: 1-29
+        torch.randint(1, 30, (batch_size,)),    # trip_len: 1-29
+        torch.randint(1, 30, (batch_size,)),    # num_unique: 1-29
+        torch.randint(1, 10, (batch_size,)),    # repeat_ratio: 1-9
+        torch.randint(1, 30, (batch_size,)),    # last_stay: 1-29
+        torch.randint(1, 30, (batch_size,)),    # same_country: 1-29
+        torch.randint(0, 5, (batch_size,)),     # last_hotel_country: 0-4
+        torch.randint(1, 30, (batch_size,)),    # unique_hotel_countries: 1-29
+        torch.randint(1, 30, (batch_size,)),    # cross_border_count: 1-29
+        torch.randint(1, 10, (batch_size,)),    # cross_border_ratio: 1-9
+    ]
+
+
 class TestEmbeddingModels:
     """Test embedding-based models."""
 
@@ -30,24 +72,16 @@ class TestEmbeddingModels:
             num_layers=1,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
+            n_semantic_codes=10,
         )
 
         # Create dummy input
         x = torch.randint(1, vocab_size, (batch_size, seq_len))
-        booker = torch.randint(0, 5, (batch_size,))
-        device = torch.randint(0, 2, (batch_size,))
-        month = torch.randint(1, 12, (batch_size,))
-        stay = torch.randint(1, 30, (batch_size,))
-        trip_len = torch.randint(1, 30, (batch_size,))
-        num_unique = torch.randint(1, 30, (batch_size,))
-        repeat_ratio = torch.randint(1, 10, (batch_size,))
-        last_stay = torch.randint(1, 30, (batch_size,))
-        same_country = torch.randint(1, 30, (batch_size,))
+        context = generate_valid_embedding_context(batch_size)
 
-        output = model(
-            x, booker, device, month, stay,
-            trip_len, num_unique, repeat_ratio, last_stay, same_country
-        )
+        output = model(x, *context)
 
         # Output shape should be (batch_size, vocab_size)
         assert output.shape == (batch_size, vocab_size)
@@ -70,22 +104,14 @@ class TestEmbeddingModels:
                 num_layers=1,
                 n_booker_countries=5,
                 n_device_classes=2,
+                n_affiliates=3,
+                n_hotel_countries=5,
+                n_semantic_codes=10,
                 pooling=pooling,
             )
 
             x = torch.randint(1, vocab_size, (batch_size, seq_len))
-            # Generate valid context values within embedding ranges
-            context = [
-                torch.randint(0, 5, (batch_size,)),    # booker: 0-4
-                torch.randint(0, 2, (batch_size,)),    # device: 0-1
-                torch.randint(1, 12, (batch_size,)),   # month: 1-11
-                torch.randint(1, 30, (batch_size,)),   # stay: 1-29
-                torch.randint(1, 30, (batch_size,)),   # trip_len: 1-29
-                torch.randint(1, 30, (batch_size,)),   # num_unique: 1-29
-                torch.randint(1, 10, (batch_size,)),   # repeat_ratio: 1-9
-                torch.randint(1, 30, (batch_size,)),   # last_stay: 1-29
-                torch.randint(1, 30, (batch_size,)),   # same_country: 1-29
-            ]
+            context = generate_valid_embedding_context(batch_size)
 
             output = model(x, *context)
             assert output.shape == (batch_size, vocab_size)
@@ -103,21 +129,13 @@ class TestEmbeddingModels:
             hidden_dim=64,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
+            n_semantic_codes=10,
         )
 
         x = torch.randint(1, vocab_size, (batch_size, seq_len))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (batch_size,)),    # booker: 0-4
-            torch.randint(0, 2, (batch_size,)),    # device: 0-1
-            torch.randint(1, 12, (batch_size,)),   # month: 1-11
-            torch.randint(1, 30, (batch_size,)),   # stay: 1-29
-            torch.randint(1, 30, (batch_size,)),   # trip_len: 1-29
-            torch.randint(1, 30, (batch_size,)),   # num_unique: 1-29
-            torch.randint(1, 10, (batch_size,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (batch_size,)),   # last_stay: 1-29
-            torch.randint(1, 30, (batch_size,)),   # same_country: 1-29
-        ]
+        context = generate_valid_embedding_context(batch_size)
 
         output = model(x, *context)
 
@@ -203,22 +221,13 @@ class TestRQVAEPredictionModels:
             num_layers=1,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
         )
 
         # Input: sequences of code pairs
         x = torch.randint(0, codebook_size, (batch_size, seq_len, 2))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (batch_size,)),    # booker: 0-4
-            torch.randint(0, 2, (batch_size,)),    # device: 0-1
-            torch.randint(1, 12, (batch_size,)),   # month: 1-11
-            torch.randint(1, 30, (batch_size,)),   # stay: 1-29
-            torch.randint(1, 30, (batch_size,)),   # trip_len: 1-29
-            torch.randint(1, 30, (batch_size,)),   # num_unique: 1-29
-            torch.randint(1, 10, (batch_size,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (batch_size,)),   # last_stay: 1-29
-            torch.randint(1, 30, (batch_size,)),   # same_country: 1-29
-        ]
+        context = generate_valid_rq_context(batch_size)
 
         output = model(x, *context)
 
@@ -233,21 +242,12 @@ class TestRQVAEPredictionModels:
             hidden_dim=64,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
         )
 
         x = torch.randint(0, 64, (4, 10, 2))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (4,)),    # booker: 0-4
-            torch.randint(0, 2, (4,)),    # device: 0-1
-            torch.randint(1, 12, (4,)),   # month: 1-11
-            torch.randint(1, 30, (4,)),   # stay: 1-29
-            torch.randint(1, 30, (4,)),   # trip_len: 1-29
-            torch.randint(1, 30, (4,)),   # num_unique: 1-29
-            torch.randint(1, 10, (4,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (4,)),   # last_stay: 1-29
-            torch.randint(1, 30, (4,)),   # same_country: 1-29
-        ]
+        context = generate_valid_rq_context(4)
 
         output = model(x, *context)
         assert output.shape == (4, 2, 64)
@@ -265,21 +265,12 @@ class TestRQKMeansModels:
             num_layers=1,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
         )
 
         x = torch.randint(0, 64, (4, 10, 2))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (4,)),    # booker: 0-4
-            torch.randint(0, 2, (4,)),    # device: 0-1
-            torch.randint(1, 12, (4,)),   # month: 1-11
-            torch.randint(1, 30, (4,)),   # stay: 1-29
-            torch.randint(1, 30, (4,)),   # trip_len: 1-29
-            torch.randint(1, 30, (4,)),   # num_unique: 1-29
-            torch.randint(1, 10, (4,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (4,)),   # last_stay: 1-29
-            torch.randint(1, 30, (4,)),   # same_country: 1-29
-        ]
+        context = generate_valid_rq_context(4)
 
         output = model(x, *context)
         assert output.shape == (4, 2, 64)
@@ -292,21 +283,12 @@ class TestRQKMeansModels:
             hidden_dim=64,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
         )
 
         x = torch.randint(0, 64, (4, 10, 2))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (4,)),    # booker: 0-4
-            torch.randint(0, 2, (4,)),    # device: 0-1
-            torch.randint(1, 12, (4,)),   # month: 1-11
-            torch.randint(1, 30, (4,)),   # stay: 1-29
-            torch.randint(1, 30, (4,)),   # trip_len: 1-29
-            torch.randint(1, 30, (4,)),   # num_unique: 1-29
-            torch.randint(1, 10, (4,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (4,)),   # last_stay: 1-29
-            torch.randint(1, 30, (4,)),   # same_country: 1-29
-        ]
+        context = generate_valid_rq_context(4)
 
         output = model(x, *context)
         assert output.shape == (4, 2, 64)
@@ -323,22 +305,14 @@ class TestModelEdgeCases:
             hidden_dim=64,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
+            n_semantic_codes=10,
         )
 
         # Sequence of length 1 (minimum)
         x = torch.randint(1, 100, (2, 1))
-        # Generate valid context values within embedding ranges
-        context = [
-            torch.randint(0, 5, (2,)),    # booker: 0-4
-            torch.randint(0, 2, (2,)),    # device: 0-1
-            torch.randint(1, 12, (2,)),   # month: 1-11
-            torch.randint(1, 30, (2,)),   # stay: 1-29
-            torch.randint(1, 30, (2,)),   # trip_len: 1-29
-            torch.randint(1, 30, (2,)),   # num_unique: 1-29
-            torch.randint(1, 10, (2,)),   # repeat_ratio: 1-9
-            torch.randint(1, 30, (2,)),   # last_stay: 1-29
-            torch.randint(1, 30, (2,)),   # same_country: 1-29
-        ]
+        context = generate_valid_embedding_context(2)
 
         output = model(x, *context)
         assert output.shape == (2, 100)
@@ -353,6 +327,9 @@ class TestModelEdgeCases:
             num_layers=1,
             n_booker_countries=5,
             n_device_classes=2,
+            n_affiliates=3,
+            n_hotel_countries=5,
+            n_semantic_codes=10,
         )
 
         # Create sequence with padding
@@ -360,7 +337,7 @@ class TestModelEdgeCases:
             [1, 2, 3, 0, 0],
             [4, 5, 0, 0, 0],
         ])
-        context = [torch.zeros(2, dtype=torch.long) for _ in range(9)]
+        context = generate_valid_embedding_context(2)
 
         output = model(x, *context)
         assert output.shape == (2, 100)

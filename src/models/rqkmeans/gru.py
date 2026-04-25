@@ -8,7 +8,7 @@ class RQKmeansGRU(nn.Module):
 
     def __init__(
         self,
-        num_codes: int = 33,
+        num_codes: int | None = None,
         embedding_dim: int = 64,
         hidden_dim: int = 128,
         codebook_size: int = 32,
@@ -18,7 +18,11 @@ class RQKmeansGRU(nn.Module):
         n_hotel_countries: int = 0,
     ):
         super().__init__()
-        self.pad_token = 32
+        self.codebook_size = codebook_size
+        # Set pad_token to codebook_size if not specified
+        self.pad_token = codebook_size
+        # Set num_codes to codebook_size + 1 (including padding) if not specified
+        num_codes = num_codes if num_codes is not None else codebook_size + 1
         self.embedding = nn.Embedding(num_codes, embedding_dim, padding_idx=self.pad_token)
         self.gru = nn.GRU(embedding_dim, hidden_dim, batch_first=True)
 
@@ -60,8 +64,13 @@ class RQKmeansGRU(nn.Module):
         cross_border_count_idx,
         cross_border_ratio_idx,
     ):
-        lengths = x.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
-        embeds = self.embedding(x)
+        # x shape: (batch, seq_len, 2) for code pairs
+        batch_size, seq_len, num_levels = x.size()
+        # Flatten codes: (batch, seq_len, 2) -> (batch, seq_len*2)
+        x_flat = x.reshape(batch_size, seq_len * num_levels)
+
+        lengths = x_flat.ne(self.pad_token).sum(dim=1).clamp(min=1).cpu()
+        embeds = self.embedding(x_flat)
         packed = pack_padded_sequence(embeds, lengths, batch_first=True, enforce_sorted=False)
         _, hn = self.gru(packed)
         last_hidden = hn[-1]
@@ -85,4 +94,7 @@ class RQKmeansGRU(nn.Module):
             dim=-1,
         )
         last_hidden = last_hidden + self.ctx_proj(ctx)
-        return self.fc_code1(last_hidden), self.fc_code2(last_hidden)
+        # Return shape: (batch_size, 2, codebook_size)
+        code1_logits = self.fc_code1(last_hidden)
+        code2_logits = self.fc_code2(last_hidden)
+        return torch.stack([code1_logits, code2_logits], dim=1)
